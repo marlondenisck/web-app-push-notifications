@@ -1,0 +1,14 @@
+{
+  "name": "web-app-push-notifications",
+  "version": "1.0.0",
+  "description": "App with Node.js Express API and React frontend",
+  "scripts": {
+    "start:backend": "cd backend && npm run dev",
+    "start:frontend": "cd frontend && npm run dev",
+    "install:all": "cd backend && npm install && cd ../frontend && npm install",
+    "start:all": "concurrently \"npm run start:backend\" \"npm run start:frontend\""
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
