@@ -1,10 +1,10 @@
 console.log('SERVICE WORKER: Registrado (frontend/public/service-worker.js)');
 
 // Evento de instalação
-self.addEventListener('install', function() {
+self.addEventListener('install', function(event) {
   console.log('SERVICE WORKER: Instalado');
   // Força a ativação imediata do service worker
-  self.skipWaiting();
+  event.waitUntil(self.skipWaiting());
 });
 
 // Evento de ativação

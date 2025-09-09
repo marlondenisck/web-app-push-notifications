@@ -57,11 +57,13 @@
 
 No caso do Google Chrome (e navegadores baseados em Chromium), o endpoint de push gerado para cada inscrição (subscription.endpoint) normalmente começa com:
 ````
-google: https://fcm.googleapis.com/fcm/send/...
-````
-`````
+google: https://fcm.googleapis.com/fcm/send/
+
 mozilla: https://updates.push.services.mozilla.com/wpush/v2
-`````
+
+edge: https://wns2-bl2p.notify.windows.com/w/
+````
+
 
 Esse endpoint é do Firebase Cloud Messaging (FCM), pois o Google fornece a infraestrutura de push para o Chrome.
 Mas isso não significa que você está usando o Firebase diretamente no seu projeto — é apenas o servidor de push padrão do Chrome.
