@@ -153,6 +153,22 @@ function App() {
     }
   }
 
+  const testBackendPushNotification = async () => {
+    if (notificationPermission !== 'granted') {
+      alert('Permissão para notificações não foi concedida')
+      return
+    }
+
+    try {
+      const response = await axios.post('http://localhost:3001/push/send')
+      console.log('Resposta do backend:', response.data)
+      alert(`Notificações enviadas! ${response.data.successful} sucesso, ${response.data.failed} falhas`)
+    } catch (error) {
+      console.error('Erro ao enviar notificação via backend:', error)
+      alert('Erro ao enviar notificação via backend: ' + error.message)
+    }
+  }
+
   // Verificar o status das permissões de notificação ao carregar o componente
   useEffect(() => {
     // Verificar se o navegador suporta notificações
@@ -299,6 +315,10 @@ function App() {
             
             <button onClick={testServiceWorkerNotification} disabled={notificationPermission !== 'granted'}>
               Teste via Service Worker
+            </button>
+
+            <button onClick={testBackendPushNotification} disabled={notificationPermission !== 'granted'}>
+              Teste Push do Backend
             </button>
           </div>
         </div>

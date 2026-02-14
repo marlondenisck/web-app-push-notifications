@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard - Push Notifications</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+      overflow: hidden;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 30px;
+    }
+
+    .header h1 {
+      margin-bottom: 10px;
+      font-size: 2em;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-top: 20px;
+    }
+
+    .stat-card {
+      background: rgba(255, 255, 255, 0.2);
+      padding: 15px;
+      border-radius: 8px;
+      backdrop-filter: blur(10px);
+    }
+
+    .stat-number {
+      font-size: 2em;
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+
+    .stat-label {
+      font-size: 0.9em;
+      opacity: 0.9;
+    }
+
+    .content {
+      padding: 30px;
+    }
+
+    .actions {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 6px;
+      font-size: 1em;
+      cursor: pointer;
+      transition: all 0.3s;
+      font-weight: 500;
+    }
+
+    .btn-primary {
+      background: #667eea;
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: #5568d3;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+
+    .btn-danger {
+      background: #e74c3c;
+      color: white;
+    }
+
+    .btn-danger:hover {
+      background: #c0392b;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(231, 76, 60, 0.4);
+    }
+
+    .btn-success {
+      background: #27ae60;
+      color: white;
+      font-size: 0.9em;
+      padding: 8px 16px;
+    }
+
+    .btn-success:hover {
+      background: #229954;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(39, 174, 96, 0.4);
+    }
+
+    .btn-info {
+      background: #3498db;
+      color: white;
+      font-size: 0.9em;
+      padding: 8px 16px;
+    }
+
+    .btn-info:hover {
+      background: #2980b9;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(52, 152, 219, 0.4);
+    }
+
+    .btn:disabled {
+      background: #95a5a6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: #7f8c8d;
+    }
+
+    .empty-state svg {
+      width: 100px;
+      height: 100px;
+      margin-bottom: 20px;
+      opacity: 0.3;
+    }
+
+    .subscriptions-list {
+      display: grid;
+      gap: 15px;
+    }
+
+    .subscription-card {
+      background: #f8f9fa;
+      border: 2px solid #e9ecef;
+      border-radius: 8px;
+      padding: 20px;
+      transition: all 0.3s;
+    }
+
+    .subscription-card:hover {
+      border-color: #667eea;
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.1);
+    }
+
+    .subscription-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .subscription-id {
+      font-size: 1.2em;
+      font-weight: bold;
+      color: #2c3e50;
+    }
+
+    .subscription-actions {
+      display: flex;
+      gap: 10px;
+    }
+
+    .subscription-details {
+      background: white;
+      padding: 15px;
+      border-radius: 6px;
+      margin-bottom: 15px;
+    }
+
+    .detail-row {
+      display: grid;
+      grid-template-columns: 140px 1fr;
+      gap: 10px;
+      margin-bottom: 10px;
+      font-size: 0.9em;
+    }
+
+    .detail-label {
+      font-weight: bold;
+      color: #7f8c8d;
+    }
+
+    .detail-value {
+      color: #2c3e50;
+      word-break: break-all;
+      font-family: 'Courier New', monospace;
+      font-size: 0.85em;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 0.8em;
+      font-weight: 500;
+      background: #27ae60;
+      color: white;
+    }
+
+    .toast {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 16px 24px;
+      background: #27ae60;
+      color: white;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      z-index: 1000;
+      animation: slideIn 0.3s ease;
+      display: none;
+    }
+
+    .toast.error {
+      background: #e74c3c;
+    }
+
+    .toast.show {
+      display: block;
+    }
+
+    @keyframes slideIn {
+      from {
+        transform: translateX(400px);
+        opacity: 0;
+      }
+
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .subscription-header {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .detail-row {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>📱 Push Notifications Dashboard</h1>
+      <p>Gerencie suas subscriptions e envie notificações push</p>
+
+      <div class="stats">
+        <div class="stat-card">
+          <div class="stat-number">
+            <%= subscriptions.length %>
+          </div>
+          <div class="stat-label">Subscriptions Ativas</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number" id="totalSent">0</div>
+          <div class="stat-label">Notificações Enviadas</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="content">
+      <div class="actions">
+        <button class="btn btn-primary" onclick="sendToAll()" <%=subscriptions.length===0 ? 'disabled' : '' %>>
+          📤 Enviar para Todos
+        </button>
+        <button class="btn btn-danger" onclick="clearAll()" <%=subscriptions.length===0 ? 'disabled' : '' %>>
+          🗑️ Limpar Todas
+        </button>
+        <button class="btn btn-primary" onclick="window.location.reload()">
+          🔄 Atualizar
+        </button>
+      </div>
+
+      <% if (subscriptions.length===0) { %>
+        <div class="empty-state">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+          </svg>
+          <h2>Nenhuma subscription registrada</h2>
+          <p>Abra o frontend e permita as notificações para registrar subscriptions</p>
+        </div>
+        <% } else { %>
+          <div class="subscriptions-list">
+            <% subscriptions.forEach((sub, index)=> { %>
+              <div class="subscription-card">
+                <div class="subscription-header">
+                  <div>
+                    <span class="subscription-id">Subscription #<%= sub.id %></span>
+                    <span class="badge">Ativa</span>
+                  </div>
+                  <div class="subscription-actions">
+                    <button class="btn btn-success" onclick="sendToOne('<%= sub.id %>')">
+                      📨 Enviar Notificação
+                    </button>
+                    <button class="btn btn-info" onclick="testNotification('<%= sub.id %>')">
+                      🧪 Teste
+                    </button>
+                    <button class="btn btn-danger" onclick="removeOne('<%= sub.id %>')">
+                      ❌ Remover
+                    </button>
+                  </div>
+                </div>
+
+                <div class="subscription-details">
+                  <div class="detail-row">
+                    <div class="detail-label">Endpoint:</div>
+                    <div class="detail-value">
+                      <%= sub.endpoint.substring(0, 80) %>...
+                    </div>
+                  </div>
+                  <div class="detail-row">
+                    <div class="detail-label">Key P256DH:</div>
+                    <div class="detail-value">
+                      <%= sub.keys.p256dh %>
+                    </div>
+                  </div>
+                  <div class="detail-row">
+                    <div class="detail-label">Key Auth:</div>
+                    <div class="detail-value">
+                      <%= sub.keys.auth %>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <% }) %>
+          </div>
+          <% } %>
+    </div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <script>
+    let totalSent = 0;
+
+    function showToast(message, isError = false) {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.className = 'toast show' + (isError ? ' error' : '');
+      setTimeout(() => {
+        toast.className = 'toast';
+      }, 3000);
+    }
+
+    async function sendToAll() {
+      if (!confirm('Enviar notificação para todas as subscriptions?')) return;
+
+      try {
+        const response = await fetch('/push/send', { method: 'POST' });
+        const data = await response.json();
+
+        if (data.successful > 0) {
+          totalSent += data.successful;
+          document.getElementById('totalSent').textContent = totalSent;
+        }
+
+        showToast(`✓ ${data.successful} notificação(ões) enviada(s), ${data.failed} falha(s)`);
+
+        if (data.failed > 0) {
+          setTimeout(() => window.location.reload(), 2000);
+        }
+      } catch (error) {
+        showToast('✗ Erro ao enviar notificações: ' + error.message, true);
+      }
+    }
+
+    async function sendToOne(id) {
+      try {
+        const response = await fetch(`/push/send/${id}`, { method: 'POST' });
+        const data = await response.json();
+
+        if (response.ok) {
+          totalSent++;
+          document.getElementById('totalSent').textContent = totalSent;
+          showToast(`✓ Notificação enviada para subscription #${id}`);
+        } else {
+          showToast(`✗ ${data.error}`, true);
+          if (data.removed) {
+            setTimeout(() => window.location.reload(), 2000);
+          }
+        }
+      } catch (error) {
+        showToast('✗ Erro ao enviar notificação: ' + error.message, true);
+      }
+    }
+
+    async function testNotification(id) {
+      try {
+        const response = await fetch(`/push/test/${id}`, { method: 'POST' });
+        const data = await response.json();
+
+        if (response.ok) {
+          totalSent++;
+          document.getElementById('totalSent').textContent = totalSent;
+          showToast(`✓ Notificação de teste enviada para #${id}`);
+        } else {
+          showToast(`✗ ${data.error}`, true);
+          if (data.removed) {
+            setTimeout(() => window.location.reload(), 2000);
+          }
+        }
+      } catch (error) {
+        showToast('✗ Erro ao enviar teste: ' + error.message, true);
+      }
+    }
+
+    async function removeOne(id) {
+      if (!confirm(`Remover subscription #${id}?`)) return;
+
+      try {
+        const response = await fetch(`/push/subscription/${id}`, { method: 'DELETE' });
+        const data = await response.json();
+
+        if (response.ok) {
+          showToast(`✓ Subscription #${id} removida`);
+          setTimeout(() => window.location.reload(), 1000);
+        } else {
+          showToast(`✗ ${data.error}`, true);
+        }
+      } catch (error) {
+        showToast('✗ Erro ao remover subscription: ' + error.message, true);
+      }
+    }
+
+    async function clearAll() {
+      if (!confirm('Remover TODAS as subscriptions? Esta ação não pode ser desfeita.')) return;
+
+      try {
+        const response = await fetch('/push/subscriptions', { method: 'DELETE' });
+        const data = await response.json();
+
+        if (response.ok) {
+          showToast(`✓ ${data.removed} subscription(s) removida(s)`);
+          setTimeout(() => window.location.reload(), 1000);
+        } else {
+          showToast(`✗ ${data.error}`, true);
+        }
+      } catch (error) {
+        showToast('✗ Erro ao limpar subscriptions: ' + error.message, true);
+      }
+    }
+  </script>
+</body>
+
+</html>
