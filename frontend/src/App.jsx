@@ -4,6 +4,21 @@ import axios from 'axios'
 import './App.css'
 import MrRobotSvg from './assets/mr-robot.svg'
 
+const API_BASE_URL = 'http://localhost:3001'
+
+function urlBase64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - (base64String.length % 4)) % 4)
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/')
+  const rawData = window.atob(base64)
+  const outputArray = new Uint8Array(rawData.length)
+
+  for (let i = 0; i < rawData.length; i += 1) {
+    outputArray[i] = rawData.charCodeAt(i)
+  }
+
+  return outputArray
+}
+
 function App() {
   const [apiData, setApiData] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -38,6 +53,40 @@ function App() {
     setBrowserInfo(browserName)
   }, [])
 
+  const ensurePushSubscription = async () => {
+    if (!('serviceWorker' in navigator)) {
+      throw new Error('ServiceWorker não é suportado neste navegador')
+    }
+
+    if (!('PushManager' in window)) {
+      throw new Error('Push API não é suportada neste navegador')
+    }
+
+    const registration = await navigator.serviceWorker.ready
+    let subscription = await registration.pushManager.getSubscription()
+    const { data: publicKey } = await axios.get(`${API_BASE_URL}/push/public-key`, {
+      responseType: 'text'
+    })
+    const storedPublicKey = localStorage.getItem('vapidPublicKey')
+
+    if (subscription && storedPublicKey && storedPublicKey !== publicKey) {
+      await subscription.unsubscribe()
+      subscription = null
+    }
+
+    if (!subscription) {
+      subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(publicKey)
+      })
+    }
+
+    localStorage.setItem('vapidPublicKey', publicKey)
+    await axios.post(`${API_BASE_URL}/push/register`, subscription)
+
+    return subscription
+  }
+
   const requestNotificationPermission = async () => {
     if (!('Notification' in window)) {
       alert('Este navegador não suporta notificações')
@@ -71,8 +120,11 @@ function App() {
           try {
             await navigator.serviceWorker.ready
             console.log('Service worker está pronto')
+            await ensurePushSubscription()
+            console.log('Subscription push registrada com sucesso')
           } catch (error) {
             console.error('Erro ao verificar service worker:', error)
+            alert('Permissão concedida, mas houve um erro ao registrar o push no backend: ' + error.message)
           }
         }
       } else if (permission === 'denied') {
@@ -133,16 +185,12 @@ function App() {
       // Garantir que o service worker está registrado e ativo
       const registration = await navigator.serviceWorker.ready
       console.log('Service worker pronto para enviar notificação:', registration)
-      
-      // Enviar a notificação através do service worker
+
       await registration.showNotification('Teste via Service Worker', {
         body: 'Esta notificação foi enviada pelo Service Worker!',
-        icon: MrRobotSvg,
-        tag: 'test-notification', // Ajuda a prevenir múltiplas notificações iguais
-        requireInteraction: true, // Mantém a notificação até o usuário interagir
-        vibrate: [100, 50, 100], // Padrão de vibração (ms)
+        tag: 'test-notification',
         data: {
-          url: window.location.href // URL para abrir quando clicar na notificação
+          url: window.location.href
         }
       })
       
@@ -160,12 +208,16 @@ function App() {
     }
 
     try {
-      const response = await axios.post('http://localhost:3001/push/send')
+      await ensurePushSubscription()
+
+      const response = await axios.post(`${API_BASE_URL}/push/send`)
       console.log('Resposta do backend:', response.data)
       alert(`Notificações enviadas! ${response.data.successful} sucesso, ${response.data.failed} falhas`)
     } catch (error) {
       console.error('Erro ao enviar notificação via backend:', error)
-      alert('Erro ao enviar notificação via backend: ' + error.message)
+
+      const backendMessage = error.response?.data?.error
+      alert('Erro ao enviar notificação via backend: ' + (backendMessage || error.message))
     }
   }
 
@@ -188,7 +240,7 @@ function App() {
     const fetchData = async () => {
       try {
         setLoading(true)
-        const response = await axios.get('http://localhost:3001/')
+        const response = await axios.get(`${API_BASE_URL}/`)
         setApiData(response.data)
         setError(null)
       } catch (err) {
@@ -207,7 +259,7 @@ function App() {
     setError(null)
     setLoading(true)
     
-    axios.get('http://localhost:3001/')
+    axios.get(`${API_BASE_URL}/`)
       .then(response => {
         setApiData(response.data)
         setError(null)

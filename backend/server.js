@@ -40,8 +40,30 @@ app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
 // Middleware
+const allowedOrigins = new Set([
+  'http://localhost:5173',
+  'https://localhost:5173',
+  'http://localhost:4173',
+  'https://localhost:4173'
+]);
+
 app.use(cors({
-  origin: ['http://localhost:5173', 'https://localhost:5173'],
+  origin: (origin, callback) => {
+    // Permite requests sem Origin (ex.: curl, health checks internos).
+    if (!origin) {
+      callback(null, true);
+      return;
+    }
+
+    const normalizedOrigin = origin.replace(/\/$/, '');
+
+    if (allowedOrigins.has(normalizedOrigin)) {
+      callback(null, true);
+      return;
+    }
+
+    callback(new Error(`CORS bloqueado para origem: ${origin}`));
+  },
   credentials: true
 }));
 app.use(express.json());
@@ -75,6 +97,27 @@ app.get('/push/public-key', (req, res) => {
 
 let subscriptions = [];
 let subscriptionIdCounter = 1;
+
+function createNotificationPayload(overrides = {}) {
+  const basePayload = {
+    title: 'Nova notificação',
+    body: 'Você tem uma nova notificação!',
+    icon: '/vite.svg',
+    badge: '/vite.svg',
+    data: {
+      url: '/'
+    }
+  };
+
+  return JSON.stringify({
+    ...basePayload,
+    ...overrides,
+    data: {
+      ...basePayload.data,
+      ...(overrides.data || {})
+    }
+  });
+}
 
 function getWebPushErrorDetails(error) {
   const statusCode = error && error.statusCode ? error.statusCode : 500;
@@ -130,7 +173,13 @@ app.post('/push/send', async (req, res) => {
         try {
           await Webpush.sendNotification(
             subscription, 
-            'Você tem uma nova notificação! vinda do backend'
+            createNotificationPayload({
+              title: 'Nova notificação',
+              body: 'Você tem uma nova notificação vinda do backend',
+              data: {
+                url: '/'
+              }
+            })
           );
           console.log(`✓ Notificação enviada para subscription ${index + 1}`);
           return { success: true, index };
@@ -190,7 +239,13 @@ app.post('/push/send/:id', async (req, res) => {
     try {
       await Webpush.sendNotification(
         subscription,
-        'Você tem uma nova notificação! 🔔'
+        createNotificationPayload({
+          title: 'Nova notificação',
+          body: 'Você tem uma nova notificação!',
+          data: {
+            url: '/'
+          }
+        })
       );
       console.log(`✓ Notificação enviada para subscription #${id}`);
       return res.status(200).json({ 
@@ -250,11 +305,14 @@ app.post('/push/test/:id', async (req, res) => {
     try {
       await Webpush.sendNotification(
         subscription,
-        JSON.stringify({
-          title: '🧪 Teste de Notificação',
+        createNotificationPayload({
+          title: 'Teste de Notificação',
           body: `Esta é uma notificação de teste para subscription #${id}`,
-          icon: '🔔',
-          timestamp: new Date().toISOString()
+          data: {
+            url: '/dashboard',
+            subscriptionId: id,
+            timestamp: new Date().toISOString()
+          }
         })
       );
       console.log(`✓ Notificação de teste enviada para subscription #${id}`);

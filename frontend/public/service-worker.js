@@ -14,17 +14,49 @@ self.addEventListener('activate', function(event) {
   event.waitUntil(self.clients.claim());
 });
 
-// Evento de push - recebe notificações
+// Evento de push - recebe notificações..
 self.addEventListener('push', function(event) {
   console.log('SERVICE WORKER: Push recebido', event);  
 
-  const payload = event.data ? event.data.text() : 'Nova notificação';
-  console.log(payload)
+  const defaultNotification = {
+    title: 'Nova notificação',
+    body: '',
+    icon: '/vite.svg',
+    badge: '/vite.svg',
+    data: {
+      url: '/'
+    }
+  };
+
+  let notificationData = defaultNotification;
+
+  if (event.data) {
+    try {
+      const parsed = event.data.json();
+      notificationData = {
+        ...defaultNotification,
+        ...parsed,
+        data: {
+          ...defaultNotification.data,
+          ...(parsed.data || {})
+        }
+      };
+    } catch (error) {
+      notificationData = {
+        ...defaultNotification,
+        title: event.data.text()
+      };
+      console.warn('SERVICE WORKER: Payload push nao era JSON, usando texto simples', error);
+    }
+  }
 
   event.waitUntil(
-    self.registration.showNotification(
-      payload
-    )
+    self.registration.showNotification(notificationData.title, {
+      body: notificationData.body,
+      icon: notificationData.icon,
+      badge: notificationData.badge,
+      data: notificationData.data
+    })
   );
 });
 
@@ -38,18 +70,23 @@ self.addEventListener('notificationclick', function(event) {
     return;
   }
 
-  // Abrir ou focar na janela da aplicação
-  // event.waitUntil(
-  //   self.clients.matchAll({ type: 'window' }).then(function(clientList) {
-  //     for (let i = 0; i < clientList.length; i++) {
-  //       const client = clientList[i];
-  //       if (client.url === event.notification.data.url && 'focus' in client) {
-  //         return client.focus();
-  //       }
-  //     }
-  //     if (self.clients.openWindow) {
-  //       return self.clients.openWindow(event.notification.data.url);
-  //     }
-  //   })
-  // );
+  const targetUrl = (event.notification && event.notification.data && event.notification.data.url) || '/';
+
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function(clientList) {
+      for (let i = 0; i < clientList.length; i++) {
+        const client = clientList[i];
+
+        if ('focus' in client && client.url.includes(targetUrl)) {
+          return client.focus();
+        }
+      }
+
+      if (self.clients.openWindow) {
+        return self.clients.openWindow(targetUrl);
+      }
+
+      return Promise.resolve();
+    })
+  );
 });
