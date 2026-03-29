@@ -33,6 +33,13 @@ https.globalAgent = new https.Agent({
 http.globalAgent = new http.Agent({
   keepAlive: true
 });
+
+// Agente HTTPS limpo passado explicitamente ao web-push,
+// garantindo que nenhum proxy do sistema intercepte a conexão com o FCM
+const cleanHttpsAgent = new https.Agent({
+  keepAlive: false,
+  rejectUnauthorized: true
+});
 // ========== FIM FIX ==========
 
 // Configurar EJS como view engine
@@ -41,6 +48,7 @@ app.set('views', path.join(__dirname, 'views'));
 
 // Middleware
 const allowedOrigins = new Set([
+  'http://localhost:3001',
   'http://localhost:5173',
   'https://localhost:5173',
   'http://localhost:4173',
@@ -179,7 +187,8 @@ app.post('/push/send', async (req, res) => {
               data: {
                 url: '/'
               }
-            })
+            }),
+            { agent: cleanHttpsAgent }
           );
           console.log(`✓ Notificação enviada para subscription ${index + 1}`);
           return { success: true, index };
@@ -245,7 +254,8 @@ app.post('/push/send/:id', async (req, res) => {
           data: {
             url: '/'
           }
-        })
+        }),
+        { agent: cleanHttpsAgent }
       );
       console.log(`✓ Notificação enviada para subscription #${id}`);
       return res.status(200).json({ 
@@ -313,7 +323,8 @@ app.post('/push/test/:id', async (req, res) => {
             subscriptionId: id,
             timestamp: new Date().toISOString()
           }
-        })
+        }),
+        { agent: cleanHttpsAgent }
       );
       console.log(`✓ Notificação de teste enviada para subscription #${id}`);
       return res.status(200).json({ 
